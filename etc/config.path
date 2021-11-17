@@ -1,0 +1,6 @@
+snroot = "../skynet/"
+luaservice = "./service/?.lua;".."./service/?/init.lua;"..snroot.."service/?.lua;"..snroot.."test/?.lua;"..snroot.."examples/?.lua;"..snroot.."test/?/init.lua"
+lualoader = snroot.."lualib/loader.lua"
+lua_path = "./etc/?.lua;".."./lualib/?.lua;"..snroot.."lualib/?.lua;"..snroot.."lualib/?/init.lua"
+lua_cpath = "./luaclib/?.so;"..snroot.."luaclib/?.so"
+snax = snroot.."examples/?.lua;"..snroot.."test/?.lua"
