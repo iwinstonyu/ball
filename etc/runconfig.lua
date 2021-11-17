@@ -5,6 +5,8 @@ return {
         game = "127.0.0.1:7773",
     },
 
+    agentmgr = {node = "center"},
+
     proxy = {
         gateway = {
             [1] = {port = 8001},
@@ -17,9 +19,9 @@ return {
     },
 
     center = {
+        agentmgr = {}
     },
 
     game = {
-
     }
 }

@@ -43,9 +43,6 @@ local str_unpack = function(msgstr)
     return msg[1], msg
 end
 
-local process_buff = function(fd, readbuff)
-end
-
 local process_msg = function(fd, msgstr)
     local cmd, msg = str_unpack(msgstr)
     skynet.error("recv "..fd.." ["..cmd.."] {"..table.concat(msg, ",").."}")
@@ -66,6 +63,18 @@ local process_msg = function(fd, msgstr)
     end
 end
 
+local process_buff = function(fd, readbuff)
+    while true do
+        local msgstr, rest = string.match(readbuff, "(.-)\r\n(.*)")
+        if msgstr then
+            readbuff = rest
+            process_msg(fd, msgstr)
+        else
+            return readbuff
+        end
+    end
+end
+
 local disconnect = function(fd)
     local c = conns[fd]
     if not c then
@@ -77,8 +86,7 @@ local disconnect = function(fd)
         return
     else
         players[playerid] = nil
-        local reason = "断线"
-        skynet.call("agentmgr", "lua", "reqkick", playerid, reason)
+        skynet.call("agentmgr", "lua", "reqkick", playerid, "断线")
     end
 end
 
@@ -100,7 +108,6 @@ local recv_loop = function(fd)
     end
 end
 
-
 local connect = function(fd, addr)
     print("connect from "..addr.." "..fd)
     local c = conn()
@@ -111,6 +118,7 @@ end
 
 function s.init()
     skynet.error("[start] "..s.name.." "..s.id)
+
     local node = skynet.getenv("node")
     local nodecfg = runconfig[node]
     local port = nodecfg.gateway[s.id].port
@@ -120,6 +128,7 @@ function s.init()
     socket.start(listenfd, connect)
 end
 
+-- response
 s.resp.send_by_fd = function(source, fd, msg)
     if not conns[fd] then
         return
@@ -130,7 +139,7 @@ s.resp.send_by_fd = function(source, fd, msg)
     socket.write(fd, buff)
 end
 
-s.resp.send = function(soucr, playerid, msg)
+s.resp.send = function(source, playerid, msg)
     local gplayer = players[playerid]
     if gplayer == nil then
         return
@@ -141,7 +150,7 @@ s.resp.send = function(soucr, playerid, msg)
         return
     end
 
-    s.resp.send_by_fd(nil, c.fd, msg)
+    s.resp.send_by_fd(source, c.fd, msg)
 end
 
 s.resp.sure_agent = function(source, fd, playerid, agent)
@@ -162,4 +171,22 @@ s.resp.sure_agent = function(source, fd, playerid, agent)
     return true
 end
 
+s.resp.kick = function(source, playerid)
+    local gplayer = players[playerid]
+    if not gplayer then
+        return
+    end
+
+    local c = gplayer.conn
+    players[playerid] = nil
+
+    if not c then
+        return
+    end
+    conns[c.fd] = nil
+    disconnect(c.fd)
+    socket.close(c.fd)
+end
+
+-- start
 s.start(...)
